@@ -1,14 +1,17 @@
 from flask import Flask, jsonify, request
 from flask_sqlalchemy import SQLAlchemy
 from datetime import timedelta, datetime
-from flask_marshmallow import Marshmallow, fields
-from marshmallow import fields, ValidationError
+from flask_marshmallow import Marshmallow
+from marshmallow import ValidationError, fields
 from password import mypassword
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+mysqlconnector://root:{mypassword}@localhost/e_commerce_db'
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
+
+with app.app_context():
+    db.create_all()
 
 class Account(db.Model):
     __tablename__ = 'Customer_Accounts'
@@ -53,7 +56,6 @@ class Order(db.Model):
     def calculate_expected_delivery_date(self):
         return self.order_date + timedelta(days=3)
     
-
 class AccountsSchema(ma.Schema):
     username = fields.String(required=True)
     password = fields.String(required=True)
@@ -122,7 +124,6 @@ class OrderManipSchema(ma.Schema):
 
 order_manip_schema = OrderManipSchema()
 orders_manip_schema = OrderManipSchema(many=True)
-
 
 @app.route('/')
 def home():
@@ -296,10 +297,6 @@ def place_order():
     db.session.commit()
     
     return jsonify({"message": "New order placed successfully"})
-
-
-with app.app_context():
-    db.create_all()
 
 if __name__ == '__main__':
     app.run(debug=True)
